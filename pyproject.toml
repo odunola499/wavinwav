@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wavinwav"
+version = "0.1.0"
+description = "Audio Hiding with Invertible Networks"
+authors = [{ name = "Odunola Jenrola" }]
+readme = "README.md"
+requires-python = ">=3.9"
+
+dependencies = [
+    "datasets==2.21.0",
+    "librosa",
+    "soundfile",
+    "torch==2.7.1",
+    "torchaudio==2.7.1",
+    "lightning",
+    "wandb"
+]
+
+[project.urls]
+homepage = "https://github.com/odunola499/wavinwav"
