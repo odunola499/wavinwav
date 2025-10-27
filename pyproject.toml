@@ -22,3 +22,9 @@ dependencies = [
 
 [project.urls]
 homepage = "https://github.com/odunola499/wavinwav"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wavinwav"]
+
+[tool.hatch.build.targets.sdist]
+include = ["wavinwav"]
