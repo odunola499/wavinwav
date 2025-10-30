@@ -1,6 +1,6 @@
 import torch
 from torch import nn, Tensor
-from .block import ForwardAffineBlock, InverseAffineBlock
+from modules.block import ForwardAffineBlock, InverseAffineBlock
 from wavinwav.train.loss import *
 from wavinwav.config import ModelConfig
 

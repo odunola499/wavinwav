@@ -1,6 +1,6 @@
 import torch
 from wavinwav.config import ModelConfig
-from wavinwav.modules.model import WavModel
+from wavinwav.model import WavModel
 
 x_cover = torch.randn(4, 24000*10)
 x_secret = torch.randn(4, 24000*10)
