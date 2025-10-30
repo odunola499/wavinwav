@@ -6,7 +6,7 @@ class ModelConfig:
     in_channels:int =  1 # Mono, 2 for stereo
     growth_rate:int = 64
     kernel_size:int = 3
-    stride:int = 1
+    stride:int = 3
     num_convs = 5
     alpha:int = 0.1
     num_inverible_blocks = 5
