@@ -1,5 +1,6 @@
 import torch
 from torch import nn, Tensor
+from torch.utils.checkpoint import checkpoint
 
 
 class DenseBlock(nn.Module):
@@ -8,11 +9,13 @@ class DenseBlock(nn.Module):
                  growth_rate = 64,
                  kernel_size = 3,
                  stride = 1,
-                 num_convs = 5):
+                 num_convs = 5,
+                 use_checkpoint = True
+                 ):
         super().__init__()
         padding = kernel_size // 2
         self.layers = nn.ModuleList()
-
+        self.use_checkpoint = use_checkpoint
 
         for i in range(num_convs - 1):
             in_ch = in_channels + (i * growth_rate)
@@ -30,15 +33,17 @@ class DenseBlock(nn.Module):
             )
         final_in_ch = in_channels + ((num_convs -1) * growth_rate)
         self.final_conv = nn.Conv1d(
-            in_channels = final_in_ch, out_channels= in_channels, kernel_size=kernel_size, stride = 1
+            in_channels = final_in_ch, out_channels= in_channels, kernel_size=kernel_size, stride = 1, padding = padding
         )
 
     def forward(self, x):
         features = [x]
         for layer in self.layers:
             inputs = torch.cat(features, dim = 1)
-            layer_out = layer(inputs)
-            print(layer_out.shape)
+            if self.use_checkpoint and self.training:
+                layer_out = checkpoint(layer, inputs, use_reentrant=False)
+            else:
+                layer_out = layer(inputs)
             features.append(layer_out)
         final_output = self.final_conv(torch.cat(features, dim = 1))
         return final_output
