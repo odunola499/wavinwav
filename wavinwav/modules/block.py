@@ -1,61 +1,47 @@
-import math
 import torch
 from torch import nn, Tensor
-from .conv import ResidualUnit, Snake1d, WNConv1d, WNConvTranspose1d
 
 
 class DenseBlock(nn.Module):
-    def __init__(self, in_channels, growth_rate=64, kernel_size=3):
+    def __init__(self,
+                 in_channels,
+                 growth_rate = 64,
+                 kernel_size = 3,
+                 stride = 1,
+                 num_convs = 5):
         super().__init__()
+        padding = kernel_size // 2
+        self.layers = nn.ModuleList()
 
-        self.strides = [3, 3, 7, 7]
-        enc_layers = []
-        dec_layers = []
 
-        in_ch = in_channels
-        channel_stack = []
-        for i, stride in enumerate(self.strides):
-            out_ch = growth_rate * (i + 1)
-            enc_layers += [
-                ResidualUnit(in_ch, kernel=kernel_size, dilation=1, groups=1),
-                ResidualUnit(in_ch, kernel=kernel_size, dilation=3, groups=1),
-                ResidualUnit(in_ch, kernel=kernel_size, dilation=9, groups=1),
-                Snake1d(in_ch),
-                WNConv1d(
-                    in_ch,
-                    out_ch,
-                    kernel_size=2 * stride,
-                    stride=stride,
-                    padding=math.ceil(stride / 2),
+        for i in range(num_convs - 1):
+            in_ch = in_channels + (i * growth_rate)
+            self.layers.append(
+                nn.Sequential(
+                    nn.Conv1d(
+                        in_channels= in_ch,
+                        out_channels=growth_rate,
+                        kernel_size=kernel_size,
+                        padding = padding,
+                        stride = stride
+                    ),
+                    nn.LeakyReLU(inplace=True)
                 )
-            ]
-            channel_stack.append((in_ch, out_ch))
-            in_ch = out_ch
-
-        for stride, (enc_in, enc_out) in zip(reversed(self.strides), reversed(channel_stack)):
-            dec_layers += [
-                Snake1d(enc_out),
-                WNConvTranspose1d(
-                    enc_out,
-                    enc_in,
-                    kernel_size=2 * stride,
-                    stride=stride,
-                    padding=math.ceil(stride / 2),
-                    output_padding=stride % 2,
-                ),
-                ResidualUnit(enc_in, dilation=1, groups=1),
-                ResidualUnit(enc_in, dilation=3, groups=1),
-                ResidualUnit(enc_in, dilation=9, groups=1),
-            ]
-
-        self.encoder = nn.Sequential(*enc_layers)
-        self.decoder = nn.Sequential(*dec_layers)
+            )
+        final_in_ch = in_channels + ((num_convs -1) * growth_rate)
+        self.final_conv = nn.Conv1d(
+            in_channels = final_in_ch, out_channels= in_channels, kernel_size=kernel_size, stride = 1
+        )
 
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
-
+        features = [x]
+        for layer in self.layers:
+            inputs = torch.cat(features, dim = 1)
+            layer_out = layer(inputs)
+            print(layer_out.shape)
+            features.append(layer_out)
+        final_output = self.final_conv(torch.cat(features, dim = 1))
+        return final_output
 
 class AffineBlock(nn.Module):
     def __init__(self, in_channels, growth_rate, kernel_size, stride, num_convs = 5, alpha = 0.1):
@@ -64,19 +50,26 @@ class AffineBlock(nn.Module):
             in_channels,
             growth_rate,
             kernel_size,
+            stride,
+            num_convs
         )
 
         self.rho = DenseBlock(
             in_channels,
             growth_rate,
             kernel_size,
+            stride,
+            num_convs
         )
 
         self.eta = DenseBlock(
             in_channels,
             growth_rate,
             kernel_size,
+            stride,
+            num_convs
         )
+
         self.alpha = alpha
 
     def forward(self, x_cover:Tensor, x_secret:Tensor):
@@ -88,7 +81,7 @@ class AffineBlock(nn.Module):
         output_secret = (x_secret * torch.exp(rho_out)) + eta_out
         return output_cover, output_secret
 
-    def inverse(self, x_stego:Tensor, z:Tensor):
+    def inverse(self, x_stego: Tensor, z: Tensor):
         eta_out = self.eta(x_stego)
         rho_out = -self.alpha * self.rho(x_stego)
 

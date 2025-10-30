@@ -9,7 +9,7 @@ class ModelConfig:
     stride:int = 3
     num_convs = 5
     alpha:int = 0.1
-    num_inverible_blocks = 5
+    num_invertible_blocks = 5
     tie_weights:bool = True
     add_noise_layer:bool = False
 

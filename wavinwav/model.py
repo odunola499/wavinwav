@@ -1,5 +1,3 @@
-import torch
-from torch import nn, Tensor
 from wavinwav.modules.block import AffineBlock
 from wavinwav.train.loss import *
 from wavinwav.config import ModelConfig
@@ -8,7 +6,7 @@ from wavinwav.config import ModelConfig
 class WavModel(nn.Module):
     def __init__(self, config:ModelConfig):
         super().__init__()
-        num_invertible_blocks = config.num_inverible_blocks
+        num_invertible_blocks = config.num_invertible_blocks
 
         blocks = nn.ModuleList([
             AffineBlock(
