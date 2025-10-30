@@ -29,7 +29,7 @@ class DenseBlock(nn.Module):
             )
         final_in_ch = in_channels + ((num_convs -1) * growth_rate)
         self.final_conv = nn.Conv1d(
-            in_channels = final_in_ch, out_channels= in_channels, kernel_size=kernel_size, stride = 1
+            in_channels = final_in_ch, out_channels= in_channels, kernel_size=kernel_size, stride = 1, padding = padding
         )
 
     def forward(self, x):
@@ -37,7 +37,6 @@ class DenseBlock(nn.Module):
         for layer in self.layers:
             inputs = torch.cat(features, dim = 1)
             layer_out = layer(inputs)
-            print(layer_out.shape)
             features.append(layer_out)
         final_output = self.final_conv(torch.cat(features, dim = 1))
         return final_output
