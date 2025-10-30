@@ -1,11 +1,12 @@
 import torch
 from torch import nn, Tensor
 from .block import ForwardAffineBlock, InverseAffineBlock
-from wavinwav.config import Config
+from wavinwav.train.loss import *
+from wavinwav.config import ModelConfig
 
 
 class WavModel(nn.Module):
-    def __init__(self, config:Config):
+    def __init__(self, config:ModelConfig):
         super().__init__()
         num_invertible_blocks = config.num_inverible_blocks
 
@@ -57,5 +58,3 @@ class WavModel(nn.Module):
         x_cover = x_stego
         x_secret = z
         return x_cover, x_secret
-
-
