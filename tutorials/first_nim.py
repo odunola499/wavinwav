@@ -14,7 +14,6 @@ def seed_everything(seed:int = 42):
 class AffineCoupling(nn.Module):
     def __init__(self, dim:int, hidden:int, mask:torch.Tensor):
         super().__init__()
-        assert dim % 2 == 0, "Dim must be even"
         self.dim = dim
         self.register_buffer('mask', mask)
 

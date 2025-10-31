@@ -1,5 +1,6 @@
+import torch
+from torch import nn, Tensor
 from wavinwav.modules.block import AffineBlock
-from wavinwav.train.loss import *
 from wavinwav.config import ModelConfig
 
 

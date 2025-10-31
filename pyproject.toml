@@ -18,7 +18,8 @@ dependencies = [
     "torchaudio==2.7.1",
     "lightning",
     "wandb",
-    "einops"
+    "einops",
+    "transformers"
 ]
 
 [project.urls]

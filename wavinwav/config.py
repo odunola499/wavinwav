@@ -1,9 +1,17 @@
 from dataclasses import dataclass
-from typing import List, Literal
+from typing import List, Literal, Optional
+
+@dataclass
+class HFDataConfig:
+    hf_url: str = 'parler-tts/mls_eng_10k'
+    hf_name: Optional[str] = None
+    hf_split: str = 'train'
+    audio_col_name:str = 'audio'
+    sample_rate:int = 24000
 
 @dataclass
 class ModelConfig:
-    in_channels:int =  1 # Mono, 2 for stereo
+    in_channels:int =  1
     growth_rate:int = 32
     kernel_size:int = 3
     stride:int = 1
@@ -34,4 +42,7 @@ class TrainConfig:
     val_check_interval:int = 2000
     log_every_n_steps:int = 4
     limit_val_batches:int = 50
+    sample_rate:int = 24000
+    train_type: Literal['adversarial', 'stft'] = 'stft'
+    log_to_wandb:bool = True
 

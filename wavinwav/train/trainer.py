@@ -1,19 +1,32 @@
+from datetime import datetime
 import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
-from lightning import LightningModule
+from torch.utils.data import DataLoader
+from lightning import LightningModule, Trainer
 from wavinwav.config import TrainConfig, ModelConfig
 from wavinwav.train.loss import ConcealingLoss, RevealingLoss
 from wavinwav.train.adversarial import MultiScaleSTFTDiscriminator
 from transformers import get_cosine_schedule_with_warmup
+from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
+from lightning.pytorch.loggers import WandbLogger
 
 
 class STFTTrainModule(LightningModule):
-    def __init__(self, model:nn.Module, train_config:TrainConfig, model_config:ModelConfig):
+    def __init__(
+            self,
+            model:nn.Module,
+            train_config:TrainConfig,
+            model_config:ModelConfig,
+            train_loader:DataLoader,
+            valid_loader:DataLoader
+    ):
         super().__init__()
         self.model = model
         self.train_config = train_config
         self.model_config = model_config
+        self.train_loader = train_loader
+        self.valid_loader = valid_loader
 
         self.concealing_loss = ConcealingLoss(model_config)
         self.revealing_loss = RevealingLoss(model_config)
@@ -25,6 +38,12 @@ class STFTTrainModule(LightningModule):
         stego_loss, z_loss = self.concealing_loss(x_cover, x_stego, r)
         cover_loss, secret_loss = self.revealing_loss(x_cover, x_recovered_cover,x_secret, x_recovered_secret)
         return stego_loss, z_loss, cover_loss, secret_loss
+
+    def train_dataloader(self):
+        return self.train_loader
+
+    def val_dataloader(self):
+        return self.valid_loader
 
     def training_step(self, batch, batch_idx):
         x_cover = batch['x_cover']
@@ -71,11 +90,20 @@ class STFTTrainModule(LightningModule):
 
 
 class AdversarialTrainModule(LightningModule):
-    def __init__(self,model:nn.Module, train_config:TrainConfig, model_config:ModelConfig):
+    def __init__(
+            self,model:nn.Module,
+            train_config:TrainConfig,
+            model_config:ModelConfig,
+            train_loader: DataLoader,
+            valid_loader: DataLoader,
+
+    ):
         super().__init__()
         self.model = model
         self.train_config = train_config
         self.model_config = model_config
+        self.train_loader = train_loader
+        self.valid_loader = valid_loader
 
         self.concealing_loss = ConcealingLoss(model_config)
         self.revealing_loss = RevealingLoss(model_config)
@@ -194,5 +222,75 @@ class AdversarialTrainModule(LightningModule):
         x_stego, r = self.model(x_cover, x_secret)
         x_recovered_cover, x_recovered_secret = self.model.inverse(x_stego)
         return x_stego, r, x_recovered_cover, x_recovered_secret
+
+
+
+def start_train(
+        model:nn.Module,
+        train_config:TrainConfig,
+        model_config:ModelConfig,
+        train_loader:DataLoader,
+        valid_loader:DataLoader,
+        ckpt_path = None
+):
+    train_type = train_config.train_type
+
+    if ckpt_path is not None:
+        print(f"Loading weights from {ckpt_path}")
+        weights = torch.load(ckpt_path)['state_dict']
+        weights = {i[6:]:j for i,j in weights.items()}
+        model.load_state_dict(weights)
+
+    if train_type == 'stft':
+        print("Using STFTTrainModule")
+        module = STFTTrainModule(
+            model = model,
+            train_config = train_config,
+            model_config = model_config,
+            train_loader = train_loader,
+            valid_loader = valid_loader
+        )
+
+    elif train_type == 'adversarial':
+        print("Using AdversarialTrainModule")
+        module = AdversarialTrainModule(
+            model=model,
+            train_config=train_config,
+            model_config=model_config,
+            train_loader=train_loader,
+            valid_loader=valid_loader
+        )
+    else:
+        raise ValueError(f"{train_type} is not  supported")
+
+    run_name = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    logger = WandbLogger(
+        project = 'WAVINWAV', name = run_name
+    )
+    checkpoint = ModelCheckpoint(
+        monitor='val/loss',
+        dirpath='final_checkpoints',
+        filename=f'model-{{epoch:02d}}-{{step:02d}}-{{val/loss:.3f}}',
+        save_top_k=1,
+        mode='min',
+        every_n_train_steps=1000,
+        save_last=True,
+        verbose=True
+    )
+    lr_monitor = LearningRateMonitor(logging_interval='step')
+
+    trainer = Trainer(
+        device = 'auto',
+        precision = "bf16-mixed",
+        max_steps = train_config.num_steps,
+        accumulate_grad_batches=train_config.accumulate_grad_batch,
+        log_every_n_steps=train_config.log_every_n_steps,
+        logger = logger,
+        callbacks = [lr_monitor, checkpoint],
+        limit_val_batches = train_config.limit_val_batches
+    )
+
+    trainer.fit(module)
+
 
 
