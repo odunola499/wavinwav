@@ -42,7 +42,10 @@ class ConcealingLoss(nn.Module):
     def __init__(self, config:ModelConfig):
         super().__init__()
         self.config = config
-        self.loss_func = STFTLoss(config)
+        if self.config.use_stft:
+            self.loss_func = STFTLoss(config)
+        else:
+            self.loss_func = nn.MSELoss()
 
     def stego_loss(self, x_cover:Tensor, x_stego:Tensor):
         return self.loss_func(x_cover, x_stego)
