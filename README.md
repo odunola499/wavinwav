@@ -18,7 +18,7 @@ This research has exciting potential applications in audio watermarking, where u
    * cover ↔ stego
    * original cover ↔ recovered cover
    * original secret ↔ recovered secret  
-   To build on this, i've added optional support for additional objectives:
+   To build on this, I've added optional support for additional objectives:
    * Distilation loss: l2 loss between [wavlm embeddings](https://huggingface.co/microsoft/wavlm-large) for each audio pair.
    * Adversarial loss: Using a Multi-Scale STFT discriminator from Facebook's [audiocraft](https://github.com/facebookresearch/audiocraft/tree/main/audiocraft/adversarial) library to improve perceptual realism.
 2. I do not implement the Security Mechanism (section 3D) in the paper.
@@ -31,12 +31,12 @@ This research has exciting potential applications in audio watermarking, where u
 ```commandline
 git clone https://github.com/odunola499/wavinwav.git
 cd wavinwav
-pip install -e .
+uv pip install -e .
 ```
 
 Kick off a training job like so.
  ```python
- from wavinwav.train import get_loader, start_train
+from wavinwav.train import get_loader, start_train
 from wavinwav.config import HFDataConfig, TrainConfig, ModelConfig
 from wavinwav.model import WavModel
 
