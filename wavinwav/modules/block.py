@@ -26,14 +26,15 @@ class DenseBlock(nn.Module):
                         out_channels=growth_rate,
                         kernel_size=kernel_size,
                         padding = padding,
-                        stride = stride
+                        stride = stride,
+                        groups=in_ch
                     ),
                     nn.LeakyReLU(inplace=True)
                 )
             )
         final_in_ch = in_channels + ((num_convs -1) * growth_rate)
         self.final_conv = nn.Conv1d(
-            in_channels = final_in_ch, out_channels= in_channels, kernel_size=kernel_size, stride = 1, padding = padding
+            in_channels = final_in_ch, out_channels= in_channels, kernel_size=1, stride = 1, padding = padding
         )
 
     def forward(self, x):
