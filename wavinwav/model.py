@@ -2,6 +2,7 @@ import torch
 from torch import nn, Tensor
 from wavinwav.modules.block import AffineBlock
 from wavinwav.config import ModelConfig
+from wavinwav.modules.noise import NoiseLayer
 
 
 class WavModel(nn.Module):
@@ -20,6 +21,9 @@ class WavModel(nn.Module):
         ])
 
         self.blocks = blocks
+        self.noise_layer = NoiseLayer(
+            config.sample_rate, config.noise_pool
+        )
         self.config = config
 
     def forward(self, x_cover:Tensor, x_secret:Tensor):
@@ -32,6 +36,10 @@ class WavModel(nn.Module):
 
     def inverse(self, x_stego):
         z = torch.rand_like(x_stego)
+
+        if self.training:
+            x_stego = self.noise_layer(x_stego)
+
         for layer in reversed(self.blocks):
             x_stego, z = layer.inverse(x_stego, z)
 

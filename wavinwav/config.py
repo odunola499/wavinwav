@@ -12,7 +12,7 @@ class HFDataConfig:
 @dataclass
 class ModelConfig:
     in_channels:int =  1
-    growth_rate:int = 32
+    growth_rate:int = 16
     kernel_size:int = 3
     stride:int = 1
     num_convs = 5
@@ -20,6 +20,7 @@ class ModelConfig:
     num_invertible_blocks = 5
     tie_weights:bool = True
     add_noise_layer:bool = False
+    sample_rate:int= 24000
 
     stego_coef:int = 1
     z_coef:int = 1
@@ -27,6 +28,7 @@ class ModelConfig:
     secret_coef:int = 1
     use_stft:bool = True
     encoders:List[Literal['whisper', 'wavlm']] = ('whisper','wavlm')
+    noise_pool:List[str] = ("identity", "speckle", "gaussian", "resample", "clean")
     fft_sizes:list = (512, 1024, 2048)
     hop_sizes:list = (128, 256, 512)
     win_lengths:list = (512, 1024, 2048)

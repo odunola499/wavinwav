@@ -1,14 +1,13 @@
 from random import choice
 import torch
 from torch import nn
-from torch.nn import functional as F
 from torchaudio.functional import resample
 
 class NoiseLayer(nn.Module):
-    def __init__(self, sample_rate):
+    def __init__(self, sample_rate, noise_pool):
         super().__init__()
         self.sample_rate = sample_rate
-        self.noise_pool = ["identity", "speckle", "gaussian", "resample", "clean"]
+        self.noise_pool = noise_pool
 
     def forward(self, x):
         noise = choice(self.noise_pool)
